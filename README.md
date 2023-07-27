@@ -1,7 +1,7 @@
 # 🦜️🔗 chatgpt_web_validation.py
 	Python script demonstrating how to ask ChatGPT to validate its knowledge against web search results.
 	1) Prompts user for a question.
-	2) Uses the Google API to executes a web search
+	2) Uses the Google API to execute a web search
 	3) Takes the first three websites, tokenizes the contents to see if the contents at least match the question
 	4) If they appear to match the question, then use the ChatGPT API to check if the contents match its own knowlegdge and tally the results
 
