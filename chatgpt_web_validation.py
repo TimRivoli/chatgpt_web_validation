@@ -58,20 +58,19 @@ def rough_evaluate_answer(question: str, response: str):
 		if x in response_tokens: hit_count +=1
 	return hit_count > (len(question_tokens)/2)
 	
-def ask_chatgpt(question:str, system_command:str = "", model:str = 'gpt-3.5-turbo', temperature:float=.2, max_tokens:int=2048):
+def ask_chatgpt(question:str, system_command:str = "", model:str = 'gpt-3.5-turbo', temperature:float=.2, max_tokens:int=256):
 	openai.api_key = constants.openai_api_key
 	messages = []
 	if system_command !="": messages.append({"role": "system", "content": system_command})
 	messages.append({"role": "user", "content": question})
-	print(messages)
 	try: 
-		response = openai.ChatCompletion.create(model=model, messages=messages, temperature=temperature, max_tokens=max_tokens )
-		result = response.choices[0].text.strip() 
+		result = openai.ChatCompletion.create(model=model, messages=messages, temperature=temperature, max_tokens=max_tokens )
 		success = True
 	except Exception as e:
 		print("ChatGPT query failed:", e)
 		success = False
 		result = "API Call Failed"
+	if success: result = result.choices[0].message.content
 	return result
 
 def google_search(query):
@@ -81,12 +80,16 @@ def google_search(query):
 # Main script
 if __name__ == "__main__":
 	question = input("What is your question?")
-	print(question)
-	print(tokenize_text(question))
+	print("Question:", question)
+	#print("Tokens: ", tokenize_text(question))
+	
+	#Get ChatGPT's answer to the question
+	chatgpt_result = ask_chatgpt(question)
+	print("ChatGPT Answer: ", chatgpt_result, "\n")
+
+	#Test if that corresponds to web results
 	gpt_system = "Answer in the format Response: supports, refutes, inconclusive followed by Reason:"
 	gpt_question = "With regards to the question: " + question + " Does the following text support or refute your knowledge: "
-
-	#Perform a web search
 	tally_supports = 0
 	tally_refutes = 0
 	tally_inconclusive = 0
@@ -98,8 +101,7 @@ if __name__ == "__main__":
 			result = get_plain_text_from_url(url)
 			if rough_evaluate_answer(question, result):
 				print(" Responsive answer from " + url)
-				chatgpt_result = ask_chatgpt(gpt_question + result[:500], gpt_system)
-				#chatgpt_result = "refutes"
+				chatgpt_result = ask_chatgpt(gpt_question + result[:2500], gpt_system)
 				if 'supports' in chatgpt_result[:50].lower():
 					tally_supports +=1
 				elif 'refutes' in chatgpt_result[:50].lower():
@@ -108,8 +110,7 @@ if __name__ == "__main__":
 					tally_inconclusive +=1
 				print(" ChatGPT's answer:", chatgpt_result)
 			else:
-				print(" No joy from " + url)
-			print("\n")
+				print(" No joy from " + url, "\n")
 		print("Sites Queried: ", (tally_supports + tally_refutes + tally_inconclusive))
 		print("Supports: ", tally_supports)
 		print("Refutes: ", tally_refutes)
